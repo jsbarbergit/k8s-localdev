@@ -1,0 +1,7 @@
+build/vagrant/boxes/*
+vagrant/.vagrant/machines/*
+build/packer/vbox_isos/*
+build/packer/output-virtualbox-iso/*
+.DS_Store
+*/.DS_Store
+*.key

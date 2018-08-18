@@ -1,0 +1,86 @@
+- Install vagrant plugin
+  vagrant plugin install vagrant-hostmanager
+
+- Create Vagrant base virtualbox
+
+  packer + virtualbox
+    Enable nat for virtualbox on osx
+      sudo sysctl net.inet.ip.forwarding=1
+      sudo echo "net.inet.ip.forwarding=1" >> /etc/sysctl.conf
+      add to /etc/pf.conf
+        nat on {en0, en1} proto {tcp, udp, icmp} from 10.0.69.0/24 to any -> {en0, en1}
+        pass from {lo0, 10.0.69.0/24} to any keep state
+      sudo pfctl -e -f /etc/pf.conf
+      sudo /usr/libexec/PlistBuddy -c 'add :ProgramArguments:3 string -e' /System/Library/LaunchDaemons/com.apple.pfctl.plist
+
+    create centos7 base vagrant box
+      create centos7_base.json packer file
+      create http/ks.cfg file in packer location
+      packer build centos7_base.json
+        this adds centos7_base box to vagrant - removes existing if present
+
+    # TODO - get ssh keyauth working - currently using passwords
+
+    # Had to split provoisioning up as osx does not support parallel - etcd svcs needs to be up on all nodes
+    # before k8s can start
+    vagrant up --no-provisioning
+    vagrant provision --provision-with etcd
+    vagrant provision --provision-with k8s
+
+    # Check status of k8s Install - requires k8smaster001.local is readable
+    §
+    kubectl config set-context default-context --cluster=default-cluster --user=default-admin
+    kubectl config use-context default-context
+
+
+    # Check status of Dashboard
+    kubectl get pods --all-namespaces
+
+
+
+
+    # Deploy some stuff
+    kubectl run my-nginx --image=nginx --replicas=2 --port=80
+    kubectl get pods
+    kubectl expose deployment my-nginx --port=80 --type=LoadBalancer
+    kubectl get services
+    kubectl delete deployment my-nginx
+
+
+
+    # Note that this gets you a 3 node etcd cluster with k8s api running on master001 and worker nodes on others
+    # TODO split this so the master002 & 3 nodes are api cluster then create worker nodes
+
+#run a busybox pod for internal reoubleshooting
+kubectl run -it --rm --restart=Never busybox --image=busybox sh
+
+
+
+
+# This is from k8s the hard way with pki
+- Install local client utils for k8s mgmt and pki
+curl -o cfssl https://pkg.cfssl.org/R1.2/cfssl_darwin-amd64
+curl -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_darwin-amd64
+chmod +x cfssl cfssljson
+sudo mv cfssl cfssljson /usr/local/bin/
+
+curl -o kubectl https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/darwin/amd64/kubectl
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+#Create CA config file
+cat > ca-config.json <<EOF
+{
+  "signing": {
+    "default": {
+      "expiry": "8760h"
+    },
+    "profiles": {
+      "kubernetes": {
+        "usages": ["signing", "key encipherment", "server auth", "client auth"],
+        "expiry": "8760h"
+      }
+    }
+  }
+}
+EOF

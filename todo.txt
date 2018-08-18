@@ -1,0 +1,34 @@
+Steps:
+  - Automated provisioning of infra
+    3x masters
+      k8s
+      etcd
+      +momitoring eg promethesu, grafana etc
+
+      problem - exposing a svc port to an external Address
+        can currently access if I know the node ip and port for dashboard and nginx -
+          tried to use ingress to create an endpoint - no joy - although endpoint defined
+
+          rebuild new image with additional opackages - config added
+          try installing helm version of traefic and using that to load balance across nginx cluster
+            modify nginx cluster to print hostname or service ip value
+                use the medium.com article in chrome history from 30.1 for an available image that does print details
+
+
+    3x workers
+      k8s
+      docker
+      monitoring
+  - automated cluster config
+  - cluster monitoring
+      incl data visualisation
+  - deploy application
+      php frontend
+        nginx + php
+      messaging tier
+        apachemq, rabbitmq, kafka
+        try each with different versions of fe and be containers
+      java api tier
+      k/v data store
+        mongodb
+        cassandra

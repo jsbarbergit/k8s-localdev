@@ -1,0 +1,77 @@
+{
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "files/virt7-docker-common-release.repo",
+      "destination": "/tmp/virt7-docker-common-release.repo"
+    },
+    {
+      "type": "shell",
+      "inline": [
+          "sudo mkdir /media/VBoxGuestAdditions",
+          "sudo mount -o loop,ro VBoxGuestAdditions_5.2.4.iso /media/VBoxGuestAdditions",
+          "sudo sh /media/VBoxGuestAdditions/VBoxLinuxAdditions.run",
+          "rm VBoxGuestAdditions_5.2.4.iso",
+          "sudo umount /media/VBoxGuestAdditions",
+          "sudo rmdir /media/VBoxGuestAdditions",
+          "sudo cp /tmp/virt7-docker-common-release.repo /etc/yum.repos.d/",
+          "sudo yum -y install --enablerepo=virt7-docker-common-release kubernetes etcd flannel kubeadm kubernetes-cni helm bind-utils"
+        ]
+    }
+  ],
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
+      ],
+      "boot_wait": "10s",
+      "disk_size": 81920,
+      "guest_os_type": "RedHat_64",
+      "headless": true,
+      "http_directory": "http",
+      "iso_urls": [
+        "/Users/johnb/Downloads/ISO/CentOS-7-x86_64-Minimal-1708.iso",
+        "http://mirrors.ocf.berkeley.edu/centos/7/isos/x86_64/CentOS-7-x86_64-Minimal-1708.iso"
+      ],
+      "iso_checksum_type": "sha256",
+      "iso_checksum": "bba314624956961a2ea31dd460cd860a77911c1e0a56e4820a12b9c5dad363f5",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "1000s",
+      "shutdown_command": "echo 'vagrant'|sudo -S /sbin/halt -h -p",
+      "guest_additions_url": "vbox_isos/VBoxGuestAdditions_{{.Version}}.iso",
+      "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
+      "virtualbox_version_file": ".vbox_version",
+      "vm_name": "centos7_k8s_master",
+      "vboxmanage": [
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--memory",
+          "2048"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--cpus",
+          "2"
+        ]
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "output": "/Users/johnb/Documents/k8s_project/build/vagrant/boxes/centos7_k8s_master.box",
+      "type": "vagrant"
+    },
+    {
+      "type": "shell-local",
+      "inline": [
+        "vagrant box list |grep centos7_k8s_master; if [ $? == 0 ]; then vagrant box remove centos7_k8s_master; fi",
+        "vagrant box add centos7_k8s_master /Users/johnb/Documents/k8s_project/build/vagrant/boxes/centos7_k8s_master.box"
+      ]
+    }
+  ]
+}

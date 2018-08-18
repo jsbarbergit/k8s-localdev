@@ -1,0 +1,1 @@
+KUBE_CONTROLLER_MANAGER_ARGS="--service-account-private-key-file=/var/run/kubernetes/apiserver.key --root-ca-file=/var/run/kubernetes/apiserver.crt"

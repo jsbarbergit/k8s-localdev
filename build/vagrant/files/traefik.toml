@@ -1,0 +1,15 @@
+#Global
+traefikLogsFile = "logs/traefik.log"
+
+accessLogsFile = "logs/access.log"
+
+logLevel = "DEBUG"
+defaultEntryPoint = ["http"]
+
+[web]
+address = ":8181"
+ReadOnly = true
+
+[kubernetes]
+endpoint = "https://192.168.99.100:8443"
+#namespaces = ["default", "kube-system"]

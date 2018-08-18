@@ -1,0 +1,56 @@
+Vagrant.configure("2") do |config|
+  #Common settings
+  config.vm.provider :virtualbox do |vb|
+    vb.customize [
+      "modifyvm", :id,
+      "--cpuexecutioncap", "50",
+      "--memory", "512",
+    ]
+  end
+
+  config.hostmanager.enabled = true
+  config.hostmanager.manage_guest = true
+
+  config.ssh.username = 'vagrant'
+  config.ssh.password = 'vagrant'
+  config.ssh.insert_key = false
+
+  config.vm.define "k8smaster001", primary: true do |default|
+    default.vm.box = "centos7_k8s_master"
+    default.vm.hostname = "k8smaster001.local"
+
+    default.vm.network "private_network", ip: "172.28.128.101"
+    default.vm.provider "virtualbox" do |vm|
+        vm.name = "k8smaster001"
+    end
+    default.vm.provision 'etcd', type: :shell, :path => "scripts/init_bootstrap.sh"
+    default.vm.provision 'k8s', type: :shell, :path => "scripts/k8smaster001_bootstrap.sh"
+  end
+
+  #Remaining Masters
+  (2..3).each do |i|
+    config.vm.define "k8smaster00#{i}" do |master|
+      master.vm.box = "centos7_k8s_master"
+      master.vm.hostname = "k8smaster00#{i}.local"
+
+      master.vm.network "private_network", ip: "172.28.128.10#{i}"
+      master.vm.provider "virtualbox" do |v|
+        v.name = "k8smaster00#{i}"
+      end
+      master.vm.provision 'etcd', type: :shell, :path => "scripts/init_bootstrap.sh"
+      master.vm.provision 'k8s', type: :shell, :path => "scripts/k8smaster00n_bootstrap.sh"
+    end
+  end
+
+#  (1..3).each do |i|
+#    config.vm.define "k8sworker00#{i}" do |worker|
+#      worker.vm.box = "centos7_k8s_worker"
+#      worker.vm.hostname = "k8sworker00#{i}.local"
+#      #worker.vm.provision :shell, :path => "scripts/bootstrap.sh"
+#      worker.vm.network "private_network", ip: "172.28.128.20#{i}"
+#      worker.vm.provider "virtualbox" do |v|
+#        v.name = "k8sworker00#{i}"
+#      end
+#    end
+#  end
+end
